@@ -1,1 +1,1 @@
-# flink-streaming-xchange
+# Flink Streaming Java API Application

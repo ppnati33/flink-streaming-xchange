@@ -18,32 +18,27 @@ package org.example;
  * limitations under the License.
  */
 
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.log4j.Logger;
-import org.knowm.xchange.dto.marketdata.Trade;
-
-import java.math.BigDecimal;
+import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
 
 public class StreamingJob {
-
-    private static final Logger logger = Logger.getLogger(StreamingJob.class.getName());
 
     public static void main(String[] args) throws Exception {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        env.setParallelism(4);
-
-        DataStream<Trade> socketInputStream = env.addSource(new CustomSocketStreamFunction());
+        DataStream<OrderBookUpdate> socketInputStream = env.addSource(new OrderBookUpdateSource());
 
         socketInputStream
-            .filter((FilterFunction<Trade>) trade ->
-                trade.getPrice() != null && trade.getPrice().compareTo(BigDecimal.ZERO) > 0
-            )
+            .keyBy(new OrderBookUpdateKeySelector())
+            .process(new OrderBookUpdateProcessFunction())
             .print();
 
-        env.execute("Flink Streaming Java API App");
+        env
+            .setParallelism(4)
+            //.setStateBackend(new HashMapStateBackend())
+            .enableCheckpointing(20000)
+            .execute("Flink Streaming Java API App");
     }
 }

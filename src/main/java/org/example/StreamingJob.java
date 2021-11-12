@@ -18,6 +18,7 @@ package org.example;
  * limitations under the License.
  */
 
+import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
@@ -37,8 +38,9 @@ public class StreamingJob {
 
         env
             .setParallelism(4)
-            //.setStateBackend(new HashMapStateBackend())
             .enableCheckpointing(20000)
+            //.setStateBackend(new HashMapStateBackend())
+            .setStateBackend(new EmbeddedRocksDBStateBackend())
             .execute("Flink Streaming Java API App");
     }
 }

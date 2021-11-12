@@ -16,8 +16,10 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 
+import java.time.Instant;
+
 public class OrderBookUpdateProcessFunction
-    extends KeyedProcessFunction<String, OrderBookUpdate, CustomOrderBook> {
+    extends KeyedProcessFunction<String, OrderBookUpdate, Instant> {
 
     private static final Logger logger = Logger.getLogger(StreamingJob.class.getName());
 
@@ -26,7 +28,7 @@ public class OrderBookUpdateProcessFunction
     @Override
     public void processElement(OrderBookUpdate orderBookUpdate,
                                Context context,
-                               Collector<CustomOrderBook> collector) throws Exception {
+                               Collector<Instant> collector) throws Exception {
         try {
             logger.info("Processing order book update: " + orderBookUpdate.toString());
 
@@ -52,10 +54,13 @@ public class OrderBookUpdateProcessFunction
                 );
 
             orderBook.update(orderBookUpdate);
+
             logger.info("Current order book value: " + orderBook.toString());
 
             // write state back
             orderBookState.update(orderBook);
+
+            collector.collect(Instant.now());
         } catch (Exception ex) {
             String errorMessage =
                 "Unable to process OrderBookUpdate event: " + orderBookUpdate.toString() +
@@ -68,10 +73,13 @@ public class OrderBookUpdateProcessFunction
     private void initializeState() throws Exception {
         try {
             logger.info("Try to initialize state with current order book value");
+
             Exchange exchange = ExchangeFactory.INSTANCE.createExchange(BinanceExchange.class);
             MarketDataService marketDataService = exchange.getMarketDataService();
             OrderBook orderBook = marketDataService.getOrderBook(CurrencyPair.BTC_USDT);
+
             logger.info("Order book state successfully initialized with a value: " + orderBook.toString());
+
             orderBookState.update(CustomOrderBook.from(orderBook));
         } catch (Exception ex) {
             String errorMessage = "Unable to initialize state because of error: " + ex.getMessage();

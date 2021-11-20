@@ -21,26 +21,46 @@ package org.example;
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
+import org.apache.flink.util.OutputTag;
+
+import java.time.Instant;
 
 public class StreamingJob {
+
+    private static final String CHECKPOINTS_DIR =
+        "file:///usr/local/Cellar/apache-flink/1.14.0/state_backend/rocks_db/checkpoints_dir";
+    private static final long CHECKPOINTING_INTERVAL_MS = 20000;
+    private static final String JOB_NAME = "Flink Streaming Java API Application";
 
     public static void main(String[] args) throws Exception {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        DataStream<OrderBookUpdate> socketInputStream = env.addSource(new OrderBookUpdateSource());
+        DataStream<CustomOrderBookUpdate> orderBookUpdates = env
+            .addSource(new OrderBookUpdateSource())
+            .name("order-book-update-event-source");
 
-        socketInputStream
+        final OutputTag<Instant> outputTag = new OutputTag<Instant>("side-output"){};
+
+        DataStream<Instant> timestamps = orderBookUpdates
             .keyBy(new OrderBookUpdateKeySelector())
             .process(new OrderBookUpdateProcessFunction())
-            .print();
+            .name("order-book-update-event-processor")
+            .getSideOutput(outputTag);
+
+        timestamps
+            .addSink(new LoggingSink())
+            .name("logging-sink");
 
         env
-            .setParallelism(4)
-            .enableCheckpointing(20000)
+            .getCheckpointConfig()
+            .setCheckpointStorage(CHECKPOINTS_DIR);
+
+        env
+            //.setParallelism(4)
+            .enableCheckpointing(CHECKPOINTING_INTERVAL_MS)
             //.setStateBackend(new HashMapStateBackend())
             .setStateBackend(new EmbeddedRocksDBStateBackend())
-            .execute("Flink Streaming Java API App");
+            .execute(JOB_NAME);
     }
 }

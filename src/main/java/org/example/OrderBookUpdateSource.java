@@ -8,9 +8,8 @@ import io.reactivex.disposables.Disposable;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.log4j.Logger;
 import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
 
-public class OrderBookUpdateSource extends RichSourceFunction<OrderBookUpdate> {
+public class OrderBookUpdateSource extends RichSourceFunction<CustomOrderBookUpdate> {
 
     private static final Logger logger = Logger.getLogger(OrderBookUpdateSource.class.getName());
 
@@ -24,7 +23,7 @@ public class OrderBookUpdateSource extends RichSourceFunction<OrderBookUpdate> {
     }
 
     @Override
-    public void run(SourceContext<OrderBookUpdate> sourceContext) throws Exception {
+    public void run(SourceContext<CustomOrderBookUpdate> sourceContext) throws Exception {
         logger.info("Initialize order book update subscription");
         while (isRunning) {
             subscription = ProductSubscription.create()
@@ -38,8 +37,8 @@ public class OrderBookUpdateSource extends RichSourceFunction<OrderBookUpdate> {
                 .getOrderBookUpdates(CurrencyPair.BTC_USDT)
                 .subscribe(
                     orderBookUpdate -> {
-                        logger.info("Received order new book update: " + orderBookUpdate.toString());
-                        sourceContext.collect(orderBookUpdate);
+                        //logger.info("Received order new book update: " + orderBookUpdate.toString());
+                        sourceContext.collect(new CustomOrderBookUpdate(orderBookUpdate));
                     },
                     throwable -> logger.error("Error in order book update subscription", throwable));
         }

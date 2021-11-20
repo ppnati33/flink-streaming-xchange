@@ -3,7 +3,6 @@ package org.example;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
-import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
 import org.knowm.xchange.dto.trade.LimitOrder;
 
 import java.io.Serializable;
@@ -59,8 +58,8 @@ public class CustomOrderBook implements Serializable {
         return type == Order.OrderType.ASK ? this.asks : this.bids;
     }
 
-    public void update(OrderBookUpdate orderBookUpdate) {
-        LimitOrder limitOrder = orderBookUpdate.getLimitOrder();
+    public void update(CustomOrderBookUpdate orderBookUpdate) {
+        LimitOrder limitOrder = orderBookUpdate.getOrderBookUpdate().getLimitOrder();
         List<LimitOrder> limitOrders = this.getOrders(limitOrder.getType());
         int idx = Collections.binarySearch(limitOrders, limitOrder);
         if (idx >= 0) {
@@ -69,8 +68,8 @@ public class CustomOrderBook implements Serializable {
             idx = -idx - 1;
         }
 
-        if (orderBookUpdate.getTotalVolume().compareTo(BigDecimal.ZERO) != 0) {
-            LimitOrder updatedOrder = withAmount(limitOrder, orderBookUpdate.getTotalVolume());
+        if (orderBookUpdate.getOrderBookUpdate().getTotalVolume().compareTo(BigDecimal.ZERO) != 0) {
+            LimitOrder updatedOrder = withAmount(limitOrder, orderBookUpdate.getOrderBookUpdate().getTotalVolume());
             limitOrders.add(idx, updatedOrder);
         }
 
@@ -103,7 +102,7 @@ public class CustomOrderBook implements Serializable {
 
     @Override
     public String toString() {
-        return "CustomOrderBook[" +
+        return "CustomOrderBook [" +
             "timeStamp=" + timeStamp +
             ", asks=" + asks +
             ", bids=" + bids +

@@ -20,7 +20,11 @@ package org.example;
 
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.OutputTag;
 
 import java.time.Instant;
@@ -42,15 +46,21 @@ public class StreamingJob {
 
         final OutputTag<Instant> outputTag = new OutputTag<Instant>("side-output"){};
 
-        DataStream<Instant> timestamps = orderBookUpdates
+        SingleOutputStreamOperator<CustomOrderBookUpdate> processed = orderBookUpdates
             .keyBy(new OrderBookUpdateKeySelector())
             .process(new OrderBookUpdateProcessFunction())
-            .name("order-book-update-event-processor")
-            .getSideOutput(outputTag);
+            .name("order-book-update-event-processor");
 
-        timestamps
-            .addSink(new LoggingSink())
-            .name("logging-sink");
+        DataStream<Long> averages = processed
+            .getSideOutput(outputTag)
+            .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(20)))
+            .aggregate(new OrderBookUpdateProcessingTimeAggregate(), new OrderBookUpdateProcessingTimeWindowFunction())
+            .name("order-book-update-event-processing-time-aggregator");
+
+        averages
+            .map(new HistogramMapFunction())
+            .addSink(new DiscardingSink<>()) //(new LoggingSink<>())
+            .name("discarding-sink");
 
         env
             .getCheckpointConfig()

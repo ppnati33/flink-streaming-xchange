@@ -24,16 +24,17 @@ public class OrderBookUpdateProcessFunction
     extends KeyedProcessFunction<String, CustomOrderBookUpdate, CustomOrderBookUpdate>
     implements CheckpointedFunction {
 
-    private static final Logger logger = Logger.getLogger(StreamingJob.class.getName());
+    private static final Logger logger = Logger.getLogger(OrderBookUpdateProcessFunction.class.getName());
 
     private transient ValueState<CustomOrderBook> orderBookState;
     private CustomOrderBook orderBook;
 
-    final OutputTag<Instant> outputTag = new OutputTag<Instant>("side-output") {};
+    final OutputTag<Instant> outputTag = new OutputTag<Instant>("side-output") {
+    };
 
     @Override
     public void processElement(CustomOrderBookUpdate orderBookUpdate,
-                               Context context,
+                               Context ctx,
                                Collector<CustomOrderBookUpdate> collector) throws Exception {
         try {
             //logger.info("Processing order book update: " + orderBookUpdate.toString());
@@ -48,7 +49,10 @@ public class OrderBookUpdateProcessFunction
 
             orderBook.update(orderBookUpdate);
 
-            //logger.info("Current order book value: " + orderBook.toString());
+            /*logger.info(
+                "Current order book params: asks size = " + orderBook.getAsks().size() +
+                    ", bids size" + orderBook.getBids().size()
+            );*/
 
             // write state back
             orderBookState.update(orderBook);
@@ -56,7 +60,7 @@ public class OrderBookUpdateProcessFunction
             // emit event data to regular output
             collector.collect(orderBookUpdate);
             // emit timestamp data to side output
-            context.output(outputTag, orderBookUpdate.getTimestamp());
+            ctx.output(outputTag, orderBookUpdate.getTimestamp());
         } catch (Exception ex) {
             String errorMessage =
                 "Unable to process OrderBookUpdate event: " + orderBookUpdate.toString() +
@@ -72,7 +76,7 @@ public class OrderBookUpdateProcessFunction
 
             Exchange exchange = ExchangeFactory.INSTANCE.createExchange(BinanceExchange.class);
             MarketDataService marketDataService = exchange.getMarketDataService();
-            OrderBook orderBook = marketDataService.getOrderBook(CurrencyPair.BTC_USDT);
+            OrderBook orderBook = marketDataService.getOrderBook(CurrencyPair.BTC_USDT, 5000);
 
             //logger.info("Order book state successfully initialized with a value: " + orderBook.toString());
             logger.info("Order book successfully initialized");
@@ -86,14 +90,14 @@ public class OrderBookUpdateProcessFunction
     }
 
     @Override
-    public void snapshotState(FunctionSnapshotContext context) throws Exception {
+    public void snapshotState(FunctionSnapshotContext ctx) throws Exception {
         orderBookState.clear();
         orderBookState.update(orderBook);
     }
 
     @Override
-    public void initializeState(FunctionInitializationContext context) throws Exception {
-        orderBookState = context.getKeyedStateStore().getState(
+    public void initializeState(FunctionInitializationContext ctx) throws Exception {
+        orderBookState = ctx.getKeyedStateStore().getState(
             new ValueStateDescriptor<>(
                 "orderBook",
                 TypeInformation.of(new TypeHint<CustomOrderBook>() {

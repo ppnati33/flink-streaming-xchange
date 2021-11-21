@@ -23,24 +23,23 @@ public class OrderBookUpdateSource extends RichSourceFunction<CustomOrderBookUpd
     }
 
     @Override
-    public void run(SourceContext<CustomOrderBookUpdate> sourceContext) throws Exception {
+    public void run(SourceContext<CustomOrderBookUpdate> ctx) throws Exception {
         logger.info("Initialize order book update subscription");
+
+        final Object lock = ctx.getCheckpointLock();
+
         while (isRunning) {
-            subscription = ProductSubscription.create()
-                .addOrderbook(CurrencyPair.BTC_USDT)
-                .build();
-
-            exchange = create(BinanceStreamingExchange.class);
-            exchange.connect(subscription).blockingAwait();
-
-            orderBookUpdateData = exchange.getStreamingMarketDataService()
-                .getOrderBookUpdates(CurrencyPair.BTC_USDT)
-                .subscribe(
-                    orderBookUpdate -> {
-                        //logger.info("Received order new book update: " + orderBookUpdate.toString());
-                        sourceContext.collect(new CustomOrderBookUpdate(orderBookUpdate));
-                    },
-                    throwable -> logger.error("Error in order book update subscription", throwable));
+            connect();
+            synchronized (lock) {
+                orderBookUpdateData = exchange.getStreamingMarketDataService()
+                    .getOrderBookUpdates(CurrencyPair.BTC_USDT)
+                    .subscribe(
+                        orderBookUpdate -> {
+                            //logger.info("Received order new book update: " + orderBookUpdate.toString());
+                            ctx.collect(new CustomOrderBookUpdate(orderBookUpdate));
+                        },
+                        throwable -> logger.error("Error in order book update subscription", throwable));
+            }
         }
     }
 
@@ -50,6 +49,12 @@ public class OrderBookUpdateSource extends RichSourceFunction<CustomOrderBookUpd
         isRunning = false;
         orderBookUpdateData.dispose();
         exchange.disconnect().blockingAwait();
+    }
+
+    private void connect() {
+        subscription = ProductSubscription.create().addOrderbook(CurrencyPair.BTC_USDT).build();
+        exchange = create(BinanceStreamingExchange.class);
+        exchange.connect(subscription).blockingAwait();
     }
 
     private <T extends StreamingExchange> T create(Class<T> t) {

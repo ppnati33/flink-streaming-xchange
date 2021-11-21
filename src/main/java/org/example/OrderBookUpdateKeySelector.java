@@ -5,7 +5,7 @@ import org.apache.log4j.Logger;
 
 public class OrderBookUpdateKeySelector implements KeySelector<CustomOrderBookUpdate, String> {
 
-    private static final Logger logger = Logger.getLogger(StreamingJob.class.getName());
+    private static final Logger logger = Logger.getLogger(OrderBookUpdateKeySelector.class.getName());
 
     public OrderBookUpdateKeySelector() {
     }

@@ -1,5 +1,6 @@
 package org.example;
 
+import org.apache.log4j.Logger;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
@@ -7,11 +8,11 @@ import org.knowm.xchange.dto.trade.LimitOrder;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class CustomOrderBook implements Serializable {
+
+    private static final Logger logger = Logger.getLogger(CustomOrderBook.class.getName());
 
     private static final long serialVersionUID = -7788306758114464313L;
 
@@ -25,9 +26,21 @@ public class CustomOrderBook implements Serializable {
     }
 
     public CustomOrderBook(Date timeStamp, List<LimitOrder> asks, List<LimitOrder> bids) {
+        this(timeStamp, asks, bids, false);
+    }
+
+    public CustomOrderBook(Date timeStamp, List<LimitOrder> asks, List<LimitOrder> bids, boolean sort) {
         this.timeStamp = timeStamp;
-        this.asks = asks;
-        this.bids = bids;
+        if (sort) {
+            this.asks = new ArrayList(asks);
+            this.bids = new ArrayList(bids);
+            Collections.sort(this.asks);
+            Collections.sort(this.bids);
+        } else {
+            this.asks = asks;
+            this.bids = bids;
+        }
+
     }
 
     public List<LimitOrder> getAsks() {
@@ -80,7 +93,8 @@ public class CustomOrderBook implements Serializable {
         return new CustomOrderBook(
             orderBook.getTimeStamp(),
             orderBook.getAsks(),
-            orderBook.getBids()
+            orderBook.getBids(),
+            true
         );
     }
 

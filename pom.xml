@@ -36,6 +36,7 @@ under the License.
 		<log4j.version>1.2.17</log4j.version>
 		<kafka.version>2.8.0</kafka.version>
 		<xchange.version>5.0.11</xchange.version>
+		<hdrhistogram.version>2.1.12</hdrhistogram.version>
 	</properties>
 
 	<repositories>
@@ -120,6 +121,11 @@ under the License.
 			<artifactId>flink-statebackend-rocksdb_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-metrics-dropwizard</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
 
 		<!-- explicitly add a standard loggin framework, as Flink does not (in the future) have
 			a hard dependency on one specific framework by default -->
@@ -134,6 +140,7 @@ under the License.
 			<version>${log4j.version}</version>
 		</dependency>
 
+		<!-- Kafka -->
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
@@ -145,6 +152,7 @@ under the License.
 			<version>${kafka.version}</version>
 		</dependency>
 
+		<!-- XChange -->
 		<dependency>
 			<groupId>org.knowm.xchange</groupId>
 			<artifactId>xchange-core</artifactId>
@@ -170,6 +178,13 @@ under the License.
 			<artifactId>xchange-binance</artifactId>
 			<version>${xchange.version}</version>
 		</dependency>
+
+		<!-- HdrHistogram -->
+		<dependency>
+			<groupId>org.hdrhistogram</groupId>
+			<artifactId>HdrHistogram</artifactId>
+			<version>${hdrhistogram.version}</version>
+		</dependency>
 	</dependencies>
 
 	<profiles>
@@ -182,7 +197,7 @@ under the License.
 			</activation>
 
 			<dependencies>
-
+				<!-- Kafka -->
 				<dependency>
 					<groupId>org.apache.kafka</groupId>
 					<artifactId>kafka-clients</artifactId>
@@ -194,6 +209,7 @@ under the License.
 					<version>${kafka.version}</version>
 				</dependency>
 
+				<!-- Apache Flink dependencies -->
 				<dependency>
 					<groupId>org.apache.flink</groupId>
 					<artifactId>flink-core</artifactId>
@@ -236,7 +252,13 @@ under the License.
 					<artifactId>flink-statebackend-rocksdb_${scala.binary.version}</artifactId>
 					<version>${flink.version}</version>
 				</dependency>
+				<dependency>
+					<groupId>org.apache.flink</groupId>
+					<artifactId>flink-metrics-dropwizard</artifactId>
+					<version>${flink.version}</version>
+				</dependency>
 
+				<!-- Logging -->
 				<dependency>
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-log4j12</artifactId>
@@ -248,6 +270,7 @@ under the License.
 					<version>${log4j.version}</version>
 				</dependency>
 
+				<!-- XChange -->
 				<dependency>
 					<groupId>org.knowm.xchange</groupId>
 					<artifactId>xchange-core</artifactId>
@@ -272,6 +295,13 @@ under the License.
 					<groupId>org.knowm.xchange</groupId>
 					<artifactId>xchange-binance</artifactId>
 					<version>${xchange.version}</version>
+				</dependency>
+
+				<!-- HdrHistogram -->
+				<dependency>
+					<groupId>org.hdrhistogram</groupId>
+					<artifactId>HdrHistogram</artifactId>
+					<version>${hdrhistogram.version}</version>
 				</dependency>
 			</dependencies>
 
